@@ -1,0 +1,77 @@
+# CloudPulse Monitoring Agent Configuration
+# Bind to a private network interface in production; never expose publicly without TLS + auth.
+
+agent:
+  id: "server-001"
+  name: "production-api-server"
+  environment: "production"
+
+server:
+  listen_address: "127.0.0.1:9180"
+  metrics_path: "/metrics"
+  health_path: "/health"
+  info_path: "/agent/info"
+
+auth:
+  # Optional: read bearer token from environment variable (never hard-code secrets here)
+  bearer_token_env: ""
+  # Optional TLS / mTLS certificate paths
+  tls_cert_file: ""
+  tls_key_file: ""
+  tls_client_ca: ""
+
+collection:
+  interval: "15s"
+  timeout: "5s"
+  include_go_metrics: true
+
+cpu:
+  enabled: true
+  per_core_enabled: true
+
+memory:
+  enabled: true
+
+disk:
+  enabled: true
+  excluded_mountpoints:
+    - "/proc"
+    - "/sys"
+    - "/dev"
+    - "/run"
+    - "/snap"
+  excluded_filesystems:
+    - "proc"
+    - "sysfs"
+    - "tmpfs"
+    - "devtmpfs"
+    - "devpts"
+    - "cgroup"
+    - "cgroup2"
+    - "overlay"
+    - "squashfs"
+
+network:
+  enabled: true
+  excluded_interfaces:
+    - "lo"
+    - "lo0"
+
+services:
+  - name: "application-api"
+    type: "http"
+    target: "http://127.0.0.1:8080/healthz"
+    interval: "30s"
+    timeout: "5s"
+    expected_status_code: 200
+    check_tls_expiry: false
+
+  - name: "postgresql"
+    type: "tcp"
+    target: "127.0.0.1:5432"
+    interval: "30s"
+    timeout: "5s"
+
+logging:
+  level: "info"
+  format: "json"
