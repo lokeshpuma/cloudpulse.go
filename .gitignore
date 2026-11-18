@@ -1,0 +1,42 @@
+# Binaries and build outputs
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+bin/
+dist/
+build/
+cloudpulse-agent
+cloudpulse-api
+
+# Dependencies
+node_modules/
+vendor/
+
+# Environment files (never commit secrets)
+.env
+.env.local
+.env.*.local
+frontend/.env
+frontend/.env.local
+backend/.env
+
+# Runtime generated discovery / dynamic rule files
+infrastructure/prometheus/file_sd/*.tmp
+infrastructure/prometheus/rules/custom_*.yml
+
+# IDE & OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Coverage and test reports
+coverage/
+playwright-report/
+test-results/
+*.log
