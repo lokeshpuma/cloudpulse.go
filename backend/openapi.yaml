@@ -1,0 +1,245 @@
+openapi: 3.1.0
+info:
+  title: CloudPulse REST API
+  version: 1.0.0
+  description: >
+    Infrastructure Monitoring Platform REST API backed by PostgreSQL (metadata/config)
+    and Prometheus + Alertmanager + Grafana (metrics, alerts, visualization).
+servers:
+  - url: http://localhost:8080
+    description: Local Docker / Development API
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Envelope:
+      type: object
+      properties:
+        success: { type: boolean }
+        data: {}
+        message: { type: string }
+        request_id: { type: string }
+        error:
+          type: object
+          properties:
+            code: { type: string }
+            message: { type: string }
+security:
+  - BearerAuth: []
+paths:
+  /healthz:
+    get:
+      summary: Liveness probe
+      security: []
+      responses:
+        "200": { description: API process is live }
+  /readyz:
+    get:
+      summary: Readiness probe (PostgreSQL + Prometheus status)
+      security: []
+      responses:
+        "200": { description: Ready }
+        "503": { description: PostgreSQL unavailable }
+  /api/v1/system/version:
+    get:
+      summary: Build version info
+      security: []
+      responses:
+        "200": { description: Version payload }
+  /api/v1/system/integrations:
+    get:
+      summary: Live connectivity diagnostics for PostgreSQL, Prometheus, Alertmanager, and Grafana
+      responses:
+        "200": { description: Integration health status }
+  /api/v1/auth/register:
+    post:
+      summary: Register an organization and initial Administrator
+      security: []
+      responses:
+        "201": { description: Registered and session issued }
+  /api/v1/auth/login:
+    post:
+      summary: Authenticate user and issue JWT + HttpOnly refresh cookie
+      security: []
+      responses:
+        "200": { description: Authenticated }
+        "401": { description: Invalid credentials }
+  /api/v1/auth/refresh:
+    post:
+      summary: Rotate refresh cookie and issue new short-lived JWT (requires X-CSRF-Token)
+      security: []
+      responses:
+        "200": { description: Refreshed }
+  /api/v1/auth/logout:
+    post:
+      summary: Revoke refresh session and clear cookies (requires X-CSRF-Token)
+      security: []
+      responses:
+        "200": { description: Signed out }
+  /api/v1/auth/forgot-password:
+    post:
+      summary: Request password reset token
+      security: []
+      responses:
+        "200": { description: Processed }
+  /api/v1/auth/reset-password:
+    post:
+      summary: Complete password reset using valid token
+      security: []
+      responses:
+        "200": { description: Password updated }
+  /api/v1/auth/me:
+    get:
+      summary: Current authenticated user and organization
+      responses:
+        "200": { description: Profile loaded }
+  /api/v1/organizations/current:
+    get:
+      summary: Get current organization settings
+      responses:
+        "200": { description: Organization }
+    patch:
+      summary: Update current organization settings (Admin only)
+      responses:
+        "200": { description: Updated }
+  /api/v1/users:
+    get:
+      summary: List organization users (Admin only)
+      responses:
+        "200": { description: Users }
+    post:
+      summary: Create organization user (Admin only)
+      responses:
+        "201": { description: Created }
+  /api/v1/users/{id}:
+    patch:
+      summary: Update user name, role, or status (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Updated }
+  /api/v1/servers:
+    get:
+      summary: List paginated servers enriched with live Prometheus metrics
+      responses:
+        "200": { description: Server list }
+    post:
+      summary: Register server (initial status PENDING) and sync Prometheus file_sd (Admin only)
+      responses:
+        "201": { description: Registered }
+  /api/v1/servers/{id}:
+    get:
+      summary: Get single server enriched with Prometheus telemetry
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { "200": { description: Server } }
+    patch:
+      summary: Update server metadata and re-sync Prometheus file_sd (Admin only)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { "200": { description: Updated } }
+    delete:
+      summary: Remove server from discovery (Admin only; preserves Prometheus TSDB retention)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { "200": { description: Removed } }
+  /api/v1/servers/{id}/enable:
+    post:
+      summary: Enable monitoring & add to file_sd (Admin only)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { "200": { description: Enabled } }
+  /api/v1/servers/{id}/disable:
+    post:
+      summary: Disable monitoring & remove from file_sd (Admin only)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { "200": { description: Disabled } }
+  /api/v1/servers/{id}/status:
+    get:
+      summary: Live agent scrape verification status
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { "200": { description: Status } }
+  /api/v1/servers/{id}/metrics:
+    get:
+      summary: Live CPU, memory, disk mounts, network rates/totals, services & events
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { "200": { description: Server metrics } }
+  /api/v1/servers/{id}/history:
+    get:
+      summary: Historical range metrics from Prometheus for a single server
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { "200": { description: History } }
+  /api/v1/monitoring/overview:
+    get:
+      summary: Dashboard KPI cards and recent events
+      responses: { "200": { description: Overview } }
+  /api/v1/monitoring/health:
+    get:
+      summary: Infrastructure-wide health breakdown by env, OS, and status
+      responses: { "200": { description: Health summary } }
+  /api/v1/monitoring/metrics:
+    get:
+      summary: Metric catalog and controlled PromQL Metrics Explorer query execution
+      responses: { "200": { description: Query result } }
+  /api/v1/monitoring/timeseries:
+    get:
+      summary: Multi-series CPU/Memory/Disk dashboard timeline
+      responses: { "200": { description: Timeseries } }
+  /api/v1/monitoring/targets:
+    get:
+      summary: Active Prometheus scrape targets for the organization
+      responses: { "200": { description: Targets } }
+  /api/v1/services:
+    get: { summary: List service checks enriched with Prometheus uptime & latency, responses: { "200": { description: Services } } }
+    post: { summary: Create service check (Admin/Operator), responses: { "201": { description: Created } } }
+  /api/v1/services/{id}:
+    get: { summary: Get service check, parameters: [{ name: id, in: path, required: true, schema: { type: string } }], responses: { "200": { description: Service } } }
+    patch: { summary: Update service check (Admin/Operator), parameters: [{ name: id, in: path, required: true, schema: { type: string } }], responses: { "200": { description: Updated } } }
+    delete: { summary: Delete service check (Admin/Operator), parameters: [{ name: id, in: path, required: true, schema: { type: string } }], responses: { "200": { description: Deleted } } }
+  /api/v1/services/{id}/history:
+    get: { summary: Valid-interval availability and latency history, parameters: [{ name: id, in: path, required: true, schema: { type: string } }], responses: { "200": { description: History } } }
+  /api/v1/alerts:
+    get: { summary: List live alerts joined with PostgreSQL acknowledgements, responses: { "200": { description: Alerts } } }
+  /api/v1/alerts/history:
+    get: { summary: Alert and acknowledgement history, responses: { "200": { description: Alert history } } }
+  /api/v1/alerts/{fingerprint}:
+    get: { summary: Alert detail, related metrics, and timeline, parameters: [{ name: fingerprint, in: path, required: true, schema: { type: string } }], responses: { "200": { description: Alert detail } } }
+  /api/v1/alerts/{fingerprint}/acknowledge:
+    post: { summary: Acknowledge alert in PostgreSQL without silencing Prometheus (Admin/Operator), parameters: [{ name: fingerprint, in: path, required: true, schema: { type: string } }], responses: { "201": { description: Acknowledged } } }
+  /api/v1/alert-rules:
+    get: { summary: List alert rules, responses: { "200": { description: Rules } } }
+    post: { summary: Create custom alert rule & sync Prometheus rules (Admin), responses: { "201": { description: Created } } }
+  /api/v1/alert-rules/{id}:
+    get: { summary: Get alert rule, parameters: [{ name: id, in: path, required: true, schema: { type: string } }], responses: { "200": { description: Rule } } }
+    patch: { summary: Update alert rule & sync Prometheus rules (Admin), parameters: [{ name: id, in: path, required: true, schema: { type: string } }], responses: { "200": { description: Updated } } }
+    delete: { summary: Delete custom alert rule (Admin), parameters: [{ name: id, in: path, required: true, schema: { type: string } }], responses: { "200": { description: Deleted } } }
+  /api/v1/alert-rules/{id}/validate:
+    post: { summary: Validate PromQL rule expression against Prometheus (Admin), parameters: [{ name: id, in: path, required: true, schema: { type: string } }], responses: { "200": { description: Validation result } } }
+  /api/v1/notifications:
+    get: { summary: Paginated notification delivery history, responses: { "200": { description: Notifications } } }
+  /api/v1/notifications/{id}/read:
+    patch: { summary: Mark notification read, parameters: [{ name: id, in: path, required: true, schema: { type: string } }], responses: { "200": { description: Updated } } }
+  /api/v1/notifications/read-all:
+    post: { summary: Mark all notifications read, responses: { "200": { description: Updated } } }
+  /api/v1/notification-channels:
+    get: { summary: List notification channels, responses: { "200": { description: Channels } } }
+    post: { summary: Create SSRF-validated notification channel (Admin), responses: { "201": { description: Created } } }
+  /api/v1/notification-channels/{id}:
+    patch: { summary: Update notification channel (Admin), parameters: [{ name: id, in: path, required: true, schema: { type: string } }], responses: { "200": { description: Updated } } }
+    delete: { summary: Delete notification channel (Admin), parameters: [{ name: id, in: path, required: true, schema: { type: string } }], responses: { "200": { description: Deleted } } }
+  /api/v1/notification-channels/{id}/test:
+    post: { summary: Send controlled test notification through Alertmanager (Admin), parameters: [{ name: id, in: path, required: true, schema: { type: string } }], responses: { "200": { description: Dispatched } } }
+  /api/v1/reports/infrastructure:
+    get: { summary: Infrastructure health report, responses: { "200": { description: Report } } }
+  /api/v1/reports/resources:
+    get: { summary: Resource utilization report, responses: { "200": { description: Report } } }
+  /api/v1/reports/services:
+    get: { summary: Service availability report, responses: { "200": { description: Report } } }
+  /api/v1/reports/alerts:
+    get: { summary: Alert history report, responses: { "200": { description: Report } } }
+  /api/v1/reports/export:
+    get: { summary: Export report as formula-safe CSV, JSON, or printable HTML, responses: { "200": { description: Exported file } } }
+  /api/v1/audit-logs:
+    get: { summary: Paginated append-only audit trail (Admin/Operator), responses: { "200": { description: Audit logs } } }
