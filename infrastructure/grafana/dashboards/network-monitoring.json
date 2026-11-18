@@ -1,0 +1,73 @@
+{
+  "uid": "cloudpulse-network-mon",
+  "title": "CloudPulse — Network Monitoring",
+  "tags": ["cloudpulse", "network"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "environment",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+        "query": "label_values(cloudpulse_network_receive_bytes_total, environment)",
+        "includeAll": true,
+        "current": { "text": "All", "value": "$__all" }
+      },
+      {
+        "name": "server",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+        "query": "label_values(cloudpulse_network_receive_bytes_total{environment=~\"$environment\"}, server_name)",
+        "includeAll": true,
+        "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Receive Throughput (Bytes/sec)",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "Bps" } },
+      "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+      "targets": [{ "expr": "rate(cloudpulse_network_receive_bytes_total{environment=~\"$environment\", server_name=~\"$server\"}[5m])", "legendFormat": "{{server_name}} {{interface}}", "refId": "A" }]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Transmit Throughput (Bytes/sec)",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "Bps" } },
+      "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+      "targets": [{ "expr": "rate(cloudpulse_network_transmit_bytes_total{environment=~\"$environment\", server_name=~\"$server\"}[5m])", "legendFormat": "{{server_name}} {{interface}}", "refId": "A" }]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Packet Rates (Rx / Tx packets/sec)",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "pps" } },
+      "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+      "targets": [
+        { "expr": "rate(cloudpulse_network_receive_packets_total{environment=~\"$environment\", server_name=~\"$server\"}[5m])", "legendFormat": "{{server_name}} {{interface}} Rx", "refId": "A" },
+        { "expr": "rate(cloudpulse_network_transmit_packets_total{environment=~\"$environment\", server_name=~\"$server\"}[5m])", "legendFormat": "{{server_name}} {{interface}} Tx", "refId": "B" }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Network Errors (Rx / Tx errors/sec)",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+      "targets": [
+        { "expr": "rate(cloudpulse_network_receive_errors_total{environment=~\"$environment\", server_name=~\"$server\"}[5m])", "legendFormat": "{{server_name}} {{interface}} Rx Err", "refId": "A" },
+        { "expr": "rate(cloudpulse_network_transmit_errors_total{environment=~\"$environment\", server_name=~\"$server\"}[5m])", "legendFormat": "{{server_name}} {{interface}} Tx Err", "refId": "B" }
+      ]
+    }
+  ]
+}

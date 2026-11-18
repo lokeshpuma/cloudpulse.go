@@ -1,0 +1,94 @@
+{
+  "uid": "cloudpulse-infra-overview",
+  "title": "CloudPulse — Infrastructure Overview",
+  "tags": ["cloudpulse", "infrastructure"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "environment",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+        "query": "label_values(up{job=\"cloudpulse-agents\"}, environment)",
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": "$__all" }
+      },
+      {
+        "name": "server",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+        "query": "label_values(up{job=\"cloudpulse-agents\", environment=~\"$environment\"}, server_name)",
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Total Registered Targets",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+      "targets": [{ "expr": "count(up{job=\"cloudpulse-agents\", environment=~\"$environment\", server_name=~\"$server\"})", "refId": "A" }]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Active Servers (UP)",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+      "targets": [{ "expr": "sum(up{job=\"cloudpulse-agents\", environment=~\"$environment\", server_name=~\"$server\"})", "refId": "A" }]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Fleet Availability (%)",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 } },
+      "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+      "targets": [{ "expr": "avg(up{job=\"cloudpulse-agents\", environment=~\"$environment\", server_name=~\"$server\"}) * 100", "refId": "A" }]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Active Alerts",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+      "targets": [{ "expr": "count(ALERTS{alertstate=\"firing\"}) or vector(0)", "refId": "A" }]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "CPU Usage Overview (%)",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 } },
+      "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+      "targets": [{ "expr": "cloudpulse_cpu_usage_percent{environment=~\"$environment\", server_name=~\"$server\"}", "legendFormat": "{{server_name}}", "refId": "A" }]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Memory Usage Overview (%)",
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 } },
+      "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+      "targets": [{ "expr": "cloudpulse_memory_usage_percent{environment=~\"$environment\", server_name=~\"$server\"}", "legendFormat": "{{server_name}}", "refId": "A" }]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Disk Utilization Overview (%)",
+      "gridPos": { "x": 0, "y": 12, "w": 24, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 } },
+      "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+      "targets": [{ "expr": "cloudpulse_disk_usage_percent{environment=~\"$environment\", server_name=~\"$server\"}", "legendFormat": "{{server_name}} ({{mountpoint}})", "refId": "A" }]
+    }
+  ]
+}

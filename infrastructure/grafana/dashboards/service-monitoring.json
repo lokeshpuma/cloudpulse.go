@@ -1,0 +1,74 @@
+{
+  "uid": "cloudpulse-service-mon",
+  "title": "CloudPulse — Service Monitoring",
+  "tags": ["cloudpulse", "services", "availability"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "time": { "from": "now-6h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "environment",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+        "query": "label_values(cloudpulse_service_up, environment)",
+        "includeAll": true,
+        "current": { "text": "All", "value": "$__all" }
+      },
+      {
+        "name": "server",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+        "query": "label_values(cloudpulse_service_up{environment=~\"$environment\"}, server_name)",
+        "includeAll": true,
+        "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Service Status (1=UP, 0=DOWN)",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+      "targets": [{ "expr": "cloudpulse_service_up{environment=~\"$environment\", server_name=~\"$server\"}", "legendFormat": "{{server_name}} / {{service}}", "refId": "A" }]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Last HTTP Status Codes",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+      "targets": [{ "expr": "cloudpulse_service_http_status_code{environment=~\"$environment\", server_name=~\"$server\"}", "legendFormat": "{{server_name}} / {{service}}", "refId": "A" }]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Service Response Time (s)",
+      "gridPos": { "x": 0, "y": 6, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+      "targets": [{ "expr": "cloudpulse_service_response_duration_seconds{environment=~\"$environment\", server_name=~\"$server\"}", "legendFormat": "{{server_name}} / {{service}}", "refId": "A" }]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Failed Service Checks (Rate)",
+      "gridPos": { "x": 12, "y": 6, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+      "targets": [{ "expr": "rate(cloudpulse_service_check_errors_total{environment=~\"$environment\", server_name=~\"$server\"}[5m])", "legendFormat": "{{server_name}} / {{service}}", "refId": "A" }]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Service Availability History",
+      "gridPos": { "x": 0, "y": 14, "w": 24, "h": 7 },
+      "fieldConfig": { "defaults": { "min": 0, "max": 1 } },
+      "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+      "targets": [{ "expr": "cloudpulse_service_up{environment=~\"$environment\", server_name=~\"$server\"}", "legendFormat": "{{server_name}} / {{service}}", "refId": "A" }]
+    }
+  ]
+}

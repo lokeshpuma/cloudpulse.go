@@ -1,0 +1,82 @@
+groups:
+  - name: cloudpulse_infrastructure
+    rules:
+      - alert: CPUUsageWarning
+        expr: cloudpulse_cpu_usage_percent > 75
+        for: 5m
+        labels:
+          severity: warning
+          category: cpu
+        annotations:
+          summary: "High CPU usage on {{ $labels.server_name }}"
+          description: "CPU utilization on {{ $labels.server_name }} ({{ $labels.environment }}) has exceeded 75% (current: {{ printf \"%.1f\" $value }}%) for 5 minutes."
+
+      - alert: CPUUsageCritical
+        expr: cloudpulse_cpu_usage_percent > 90
+        for: 5m
+        labels:
+          severity: critical
+          category: cpu
+        annotations:
+          summary: "Critical CPU usage on {{ $labels.server_name }}"
+          description: "CPU utilization on {{ $labels.server_name }} ({{ $labels.environment }}) has exceeded 90% (current: {{ printf \"%.1f\" $value }}%) for 5 minutes."
+
+      - alert: MemoryUsageWarning
+        expr: cloudpulse_memory_usage_percent > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: memory
+        annotations:
+          summary: "High memory usage on {{ $labels.server_name }}"
+          description: "Memory utilization on {{ $labels.server_name }} ({{ $labels.environment }}) has exceeded 80% (current: {{ printf \"%.1f\" $value }}%) for 5 minutes."
+
+      - alert: MemoryUsageCritical
+        expr: cloudpulse_memory_usage_percent > 95
+        for: 5m
+        labels:
+          severity: critical
+          category: memory
+        annotations:
+          summary: "Critical memory usage on {{ $labels.server_name }}"
+          description: "Memory utilization on {{ $labels.server_name }} ({{ $labels.environment }}) has exceeded 95% (current: {{ printf \"%.1f\" $value }}%) for 5 minutes."
+
+      - alert: DiskUsageWarning
+        expr: cloudpulse_disk_usage_percent > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: disk
+        annotations:
+          summary: "High disk utilization on {{ $labels.server_name }} ({{ $labels.mountpoint }})"
+          description: "Disk mount {{ $labels.mountpoint }} on {{ $labels.server_name }} is {{ printf \"%.1f\" $value }}% full."
+
+      - alert: DiskUsageCritical
+        expr: cloudpulse_disk_usage_percent > 90
+        for: 5m
+        labels:
+          severity: critical
+          category: disk
+        annotations:
+          summary: "Critical disk utilization on {{ $labels.server_name }} ({{ $labels.mountpoint }})"
+          description: "Disk mount {{ $labels.mountpoint }} on {{ $labels.server_name }} is {{ printf \"%.1f\" $value }}% full."
+
+      - alert: ServerDown
+        expr: up{job="cloudpulse-agents"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "Monitoring target down: {{ $labels.server_name }}"
+          description: "Prometheus failed to scrape CloudPulse agent on {{ $labels.server_name }} ({{ $labels.instance }}) for more than 1 minute."
+
+      - alert: HighNetworkErrors
+        expr: rate(cloudpulse_network_receive_errors_total[5m]) + rate(cloudpulse_network_transmit_errors_total[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          category: network
+        annotations:
+          summary: "High network errors on {{ $labels.server_name }} ({{ $labels.interface }})"
+          description: "Network interface {{ $labels.interface }} on {{ $labels.server_name }} is experiencing elevated error rates ({{ printf \"%.2f\" $value }}/s)."

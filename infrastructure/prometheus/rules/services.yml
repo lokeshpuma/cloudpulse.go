@@ -1,0 +1,32 @@
+groups:
+  - name: cloudpulse_services
+    rules:
+      - alert: ServiceDown
+        expr: cloudpulse_service_up == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: service
+        annotations:
+          summary: "Service unavailable: {{ $labels.service }} on {{ $labels.server_name }}"
+          description: "Service check {{ $labels.service }} ({{ $labels.type }} {{ $labels.target }}) on {{ $labels.server_name }} has failed for 2 minutes."
+
+      - alert: ServiceSlowResponse
+        expr: cloudpulse_service_response_duration_seconds > 2
+        for: 5m
+        labels:
+          severity: warning
+          category: service
+        annotations:
+          summary: "Elevated latency for {{ $labels.service }} on {{ $labels.server_name }}"
+          description: "Service check {{ $labels.service }} response time is {{ printf \"%.2f\" $value }}s."
+
+      - alert: ServiceTLSCertExpiringSoon
+        expr: cloudpulse_service_tls_expiry_seconds > 0 and cloudpulse_service_tls_expiry_seconds < 1209600
+        for: 10m
+        labels:
+          severity: warning
+          category: tls
+        annotations:
+          summary: "TLS certificate expiring within 14 days for {{ $labels.service }}"
+          description: "TLS certificate on {{ $labels.target }} expires in less than 14 days."

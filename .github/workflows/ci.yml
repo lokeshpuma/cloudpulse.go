@@ -1,0 +1,71 @@
+name: CloudPulse CI
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  backend:
+    name: Go Backend (fmt, vet, test, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - run: go mod download
+      - run: test -z "$(gofmt -l .)"
+      - run: go vet ./...
+      - run: go test -race -v ./...
+      - run: go build -buildvcs=false -o ../bin/cloudpulse-api ./cmd/api
+
+  agent:
+    name: Go Agent (fmt, vet, test, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: agent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: agent/go.mod
+          cache-dependency-path: agent/go.sum
+      - run: go mod download
+      - run: test -z "$(gofmt -l .)"
+      - run: go vet ./...
+      - run: go test -race -v ./...
+      - run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -o ../bin/cloudpulse-agent ./cmd/agent
+
+  frontend:
+    name: Frontend (lint, typecheck, test, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:run
+      - run: npm run build
+      - run: GITHUB_PAGES=true npm run build
+
+  docker-validate:
+    name: Docker Compose Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cp .env.example .env && docker compose config -q

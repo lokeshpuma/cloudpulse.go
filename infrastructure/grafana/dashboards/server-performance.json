@@ -1,0 +1,92 @@
+{
+  "uid": "cloudpulse-server-perf",
+  "title": "CloudPulse — Server Performance",
+  "tags": ["cloudpulse", "server", "performance"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "environment",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+        "query": "label_values(cloudpulse_cpu_usage_percent, environment)",
+        "includeAll": true,
+        "current": { "text": "All", "value": "$__all" }
+      },
+      {
+        "name": "server",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+        "query": "label_values(cloudpulse_cpu_usage_percent{environment=~\"$environment\"}, server_name)",
+        "includeAll": true,
+        "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "CPU Usage (%)",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 } },
+      "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+      "targets": [{ "expr": "cloudpulse_cpu_usage_percent{environment=~\"$environment\", server_name=~\"$server\"}", "legendFormat": "{{server_name}}", "refId": "A" }]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "CPU Load Averages (1m / 5m / 15m)",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+      "targets": [
+        { "expr": "cloudpulse_cpu_load_1m{environment=~\"$environment\", server_name=~\"$server\"}", "legendFormat": "{{server_name}} 1m", "refId": "A" },
+        { "expr": "cloudpulse_cpu_load_5m{environment=~\"$environment\", server_name=~\"$server\"}", "legendFormat": "{{server_name}} 5m", "refId": "B" },
+        { "expr": "cloudpulse_cpu_load_15m{environment=~\"$environment\", server_name=~\"$server\"}", "legendFormat": "{{server_name}} 15m", "refId": "C" }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Memory Usage (Used vs Available)",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "bytes" } },
+      "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+      "targets": [
+        { "expr": "cloudpulse_memory_used_bytes{environment=~\"$environment\", server_name=~\"$server\"}", "legendFormat": "{{server_name}} Used", "refId": "A" },
+        { "expr": "cloudpulse_memory_available_bytes{environment=~\"$environment\", server_name=~\"$server\"}", "legendFormat": "{{server_name}} Available", "refId": "B" }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Disk Usage by Mount Point (%)",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 } },
+      "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+      "targets": [{ "expr": "cloudpulse_disk_usage_percent{environment=~\"$environment\", server_name=~\"$server\"}", "legendFormat": "{{server_name}} {{mountpoint}}", "refId": "A" }]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Network Receive Rate (B/s)",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "Bps" } },
+      "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+      "targets": [{ "expr": "rate(cloudpulse_network_receive_bytes_total{environment=~\"$environment\", server_name=~\"$server\"}[5m])", "legendFormat": "{{server_name}} {{interface}} Rx", "refId": "A" }]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Network Transmit Rate (B/s)",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "Bps" } },
+      "datasource": { "type": "prometheus", "uid": "cloudpulse-prometheus" },
+      "targets": [{ "expr": "rate(cloudpulse_network_transmit_bytes_total{environment=~\"$environment\", server_name=~\"$server\"}[5m])", "legendFormat": "{{server_name}} {{interface}} Tx", "refId": "A" }]
+    }
+  ]
+}
